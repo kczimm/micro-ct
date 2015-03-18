@@ -5,9 +5,10 @@
 
 typedef enum state {PUSH, PULL, IDLE} State;
 
+static volatile State next;
+
 int main( void )
 {
-  State next;
   State current = IDLE;
 
   while( 1 )
