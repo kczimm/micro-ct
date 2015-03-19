@@ -3,7 +3,7 @@
 // author: Kevin C. Zimmerman
 // email: kevin.zimmerman@mu.edu
 
-typedef enum state {PUSH, PULL, IDLE} State;
+static typedef enum state {PUSH, PULL, IDLE} State;
 
 static volatile State next;
 
