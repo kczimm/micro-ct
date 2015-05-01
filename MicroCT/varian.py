@@ -11,10 +11,9 @@ import serial
 import threading
 
 class ScanThread(threading.Thread):
-    def __init__(self, controller,basename):
+    def __init__(self, controller):
         threading.Thread.__init__(self)
         self.controller = controller
-        self.basename = basename
 
     def run(self):
         OpenReceptorLink()
@@ -24,12 +23,19 @@ class ScanThread(threading.Thread):
         RotateStepPerDeg = 80
         WAIT_AFTER_WRITE = 0.08
         DegPerSec = 12.5
+
+        basename = self.controller.basename
+
+        binning = self.controller.view.modes.index(self.controller.view.binningValue.get())
+        gain = self.controller.view.gainValue.get()
+        offset = self.controller.view.offsetValue.get()
+        pixel = self.controller.view.pixelValue.get()
         
         dTheta = self.controller.view.deltaThetaValue.get()
         numViews = self.controller.view.numViewsValue.get()
         fps = self.controller.view.fpsValue.get()
         for i in range(0,numViews):
-            PerformAcquisition(''.join([self.basename, str(i)]),fps)
+            PerformAcquisition(''.join([basename, str(i)]),fps,binning,gain,offset,pixel)
             rotate = int(dTheta*RotateStepPerDeg)
             command = 'F,C,I2M{0},R'.format(rotate)
             COM5.write(command)
@@ -53,12 +59,12 @@ class VarianController():
     
     def scanButtonPressed(self):
         logging.debug('Scan button pressed')
-        
         if not self.scanning:
-          basename = tkFileDialog.asksaveasfilename()
-          if basename == '': return
+          self.basename = tkFileDialog.asksaveasfilename()
+          
+          if self.basename == '': return
           self.scanning = True
-          thread = ScanThread(self,basename)
+          thread = ScanThread(self)
           self.view.toggleButtonText(self.scanning)
           self.view.frame.focus_set()
           thread.start()
@@ -73,10 +79,15 @@ class VarianView(Frame):
         self.controller = controller
         
         self.frameRates = [0.2, 0.5, 1., 1.5, 2., 3., 3.75, 5., 6., 7.5, 10.]
+        self.modes = ['2x2 0.5pF VG1','1x1 0.5pF VG1']
         
         self.numViewsValue = IntVar()
         self.deltaThetaValue = DoubleVar()
         self.fpsValue = DoubleVar()
+        self.binningValue = StringVar()
+        self.gainValue = IntVar()
+        self.offsetValue = IntVar()
+        self.pixelValue = IntVar()
         
         self.loadView()
     
@@ -90,8 +101,15 @@ class VarianView(Frame):
         Label(self.frame,text='FPS:').grid(row=2,column=0,sticky=E)
         Spinbox(self.frame,values=[str(x) for x in self.frameRates],textvariable=self.fpsValue).grid(row=2,column=1)
         Label(self.frame,text='frames/s').grid(row=2,column=2)
+        Label(self.frame,text='Mode:').grid(row=3,column=0,sticky=E)
+        box = Combobox(self.frame,textvariable=self.binningValue,values=self.modes)
+        box.current(1)
+        box.grid(row=3,column=1)
+        Checkbutton(self.frame,text='Offset Corrections',variable=self.offsetValue).grid(row=4,column=0,columnspan=3)
+        Checkbutton(self.frame,text='Gain Corrections',variable=self.gainValue).grid(row=5,column=0,columnspan=3)
+        Checkbutton(self.frame,text='Pixel Defect Map',variable=self.pixelValue).grid(row=6,column=0,columnspan=3)
         self.scanButton = Button(self.frame,text='Scan',command=self.controller.scanButtonPressed,bg='green')
-        self.scanButton.grid(row=4,column=0,columnspan=3,sticky=E+W)
+        self.scanButton.grid(row=7,column=0,columnspan=3,sticky=E+W)
 
     def toggleButtonText(self,scanning):
         if scanning:
@@ -253,7 +271,7 @@ def PerformGainCalibration():
 
   return result
 
-def PerformAcquisition(filename, fps):
+def PerformAcquisition(filename, fps, binning, gain, offset, pixel):
   if fps not in FrameRates:
     print fps
     return
@@ -261,7 +279,7 @@ def PerformAcquisition(filename, fps):
   dll = CDLL("VirtCp.dll")
 
   #---STEP 1--- Set sequence information
-  result = dll.vip_select_mode(c_int(1))
+  result = dll.vip_select_mode(c_int(binning))
   GNumFrames = 0
   numBuf = 1
   numFrm = numBuf
@@ -285,7 +303,7 @@ def PerformAcquisition(filename, fps):
   numBuf = seqPrms.NumBuffers
   if numFrm > numBuf: numFrm = numBuf
 
-  result = dll.vip_set_frame_rate(c_int(1),c_double(fps))
+  result = dll.vip_set_frame_rate(c_int(binning),c_double(fps))
   if result != VIP_NO_ERR:
     return result
 
@@ -299,9 +317,9 @@ def PerformAcquisition(filename, fps):
 
     corr = SCorrections()
     corr.StructSize = c_int(sizeof(SCorrections))
-    corr.Ofst = c_int(1)
-    corr.Gain = c_int(1)
-    corr.Dfct = c_int(1)
+    corr.Ofst = c_int(offset)
+    corr.Gain = c_int(gain)
+    corr.Dfct = c_int(pixel)
     result = dll.vip_set_correction_settings(byref(corr))
     result = dll.vip_set_correction_settings(byref(corr))
     if result == HCP_NO_ERR:
@@ -327,8 +345,12 @@ def PerformAcquisition(filename, fps):
     return result
   #---STEP 7---
   if result == VIP_NO_ERR:
-    x_size = 1536
-    y_size = 1920
+    if binning == 1:
+      x_size = 1536
+      y_size = 1920
+    else:
+      x_size = 768
+      y_size = 960
     size = x_size*y_size
     buf = POINTER(WORD)()
 
