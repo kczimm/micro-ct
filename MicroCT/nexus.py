@@ -73,6 +73,10 @@ class NexusController():
 class NexusView(Frame):
     def __init__(self,controller):
         self.frame = Toplevel(controller.parent);
+
+        revision = 1.0
+        
+        self.frame.title('Nexus {0}'.format(revision))
         self.controller = controller
         
         self.frameRates = [0.2, 0.5, 1., 1.5, 2., 3., 3.75, 5., 6., 7.5, 10.]

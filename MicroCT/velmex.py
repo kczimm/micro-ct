@@ -16,7 +16,7 @@ class VelmexController():
         self.view.rotate_value.set(str(self.model.getRotateValue()))
         self.view.y2_value.set(str(self.model.getY2Value()))
 
-    def moveButtonPressed(self):
+    def move(self,*args):
         logging.debug('Move button pressed')
         self.model.setXValue(float(self.view.x_value.get()))
         self.model.setYValue(float(self.view.y_value.get()))
@@ -29,6 +29,10 @@ class VelmexController():
 class VelmexView(Frame):
     def __init__(self,controller):
         self.frame = Toplevel(controller.parent);
+
+        revision = 1.1
+        
+        self.frame.title('Velmex {0}'.format(revision))
         self.controller = controller
         
         self.x_value = StringVar()
@@ -41,26 +45,38 @@ class VelmexView(Frame):
         self.loadView()
 
     def loadView(self):
-        moveButton = Button(self.frame,text='Move',command=self.controller.moveButtonPressed).grid(row=6,column=0,columnspan=7,sticky=E+W)
+        moveButton = Button(self.frame,text='Move',command=self.controller.move).grid(row=6,column=0,columnspan=7,sticky=E+W)
         stageLabel = Label(self.frame,text='Stage').grid(row=0,column=0,columnspan=3)
         detectorLabel = Label(self.frame,text='Detector').grid(row=0,column=4,columnspan=3)
         xLabel = Label(self.frame,text='X:').grid(row=1,column=0,sticky=E)
-        xSpinbox = Spinbox(self.frame,textvariable=self.x_value,from_=-50.0,to=50.0,increment=0.1).grid(row=1,column=1)
+        xSpinbox = Spinbox(self.frame,textvariable=self.x_value,from_=-50.0,to=50.0,increment=0.1)
+        xSpinbox.grid(row=1,column=1)
+        xSpinbox.bind('<Return>', self.controller.move)
         xUnitLabel = Label(self.frame,text='cm').grid(row=1,column=2)
         yLabel = Label(self.frame,text='Y:').grid(row=2,column=0,sticky=E)
-        ySpinbox = Spinbox(self.frame,textvariable=self.y_value,from_=0.0,to=50.0,increment=0.1).grid(row=2,column=1)
+        ySpinbox = Spinbox(self.frame,textvariable=self.y_value,from_=0.0,to=50.0,increment=0.1)
+        ySpinbox.grid(row=2,column=1)
+        ySpinbox.bind('<Return>', self.controller.move)
         yUnitLabel = Label(self.frame,text='cm').grid(row=2,column=2)
         zLabel = Label(self.frame,text='Z:').grid(row=3,column=0,sticky=E)
-        zSpinbox = Spinbox(self.frame,textvariable=self.z_value,from_=0.0,to=50.0,increment=0.1).grid(row=3,column=1)
+        zSpinbox = Spinbox(self.frame,textvariable=self.z_value,from_=0.0,to=50.0,increment=0.1)
+        zSpinbox.grid(row=3,column=1)
+        zSpinbox.bind('<Return>', self.controller.move)
         zUnitLabel = Label(self.frame,text='cm').grid(row=3,column=2)
         tiltLabel = Label(self.frame,text='Tilt:').grid(row=4,column=0,sticky=E)
-        tiltSpinbox = Spinbox(self.frame,textvariable=self.tilt_value,from_=0.0,to=90.0,increment=0.1).grid(row=4,column=1)
+        tiltSpinbox = Spinbox(self.frame,textvariable=self.tilt_value,from_=0.0,to=90.0,increment=0.1)
+        tiltSpinbox.grid(row=4,column=1)
+        tiltSpinbox.bind('<Return>', self.controller.move)
         tiltUnitLabel = Label(self.frame,text='deg').grid(row=4,column=2)
         rotateLabel = Label(self.frame,text='Rotate:').grid(row=5,column=0,sticky=E)
-        rotateSpinbox = Spinbox(self.frame,textvariable=self.rotate_value,from_=0.0,to=360.0,increment=0.1).grid(row=5,column=1)
+        rotateSpinbox = Spinbox(self.frame,textvariable=self.rotate_value,from_=0.0,to=360.0,increment=0.1)
+        rotateSpinbox.grid(row=5,column=1)
+        rotateSpinbox.bind('<Return>', self.controller.move)
         rotateUnitLabel = Label(self.frame,text='deg').grid(row=5,column=2)
         y2Label = Label(self.frame,text='Y2:').grid(row=1,column=4,sticky=E)
-        y2Spinbox = Spinbox(self.frame,textvariable=self.y2_value,from_=0.0,to=50.0,increment=0.1).grid(row=1,column=5)
+        y2Spinbox = Spinbox(self.frame,textvariable=self.y2_value,from_=0.0,to=50.0,increment=0.1)
+        y2Spinbox.grid(row=1,column=5)
+        y2Spinbox.bind('<Return>', self.controller.move)
         y2UnitLabel = Label(self.frame,text='cm').grid(row=1,column=6)
 
 class VelmexModel():

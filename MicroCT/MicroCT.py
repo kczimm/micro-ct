@@ -58,7 +58,7 @@ class MainView(Frame):
 
 def main():
     logging.basicConfig(level=logging.CRITICAL)
-    revision = 1.0
+    revision = 2.0
     root = Tk()
     root.title('MicroCT {0}'.format(revision))
     app = MainController(root)

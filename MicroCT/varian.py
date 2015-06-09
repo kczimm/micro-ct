@@ -35,7 +35,9 @@ class ScanThread(threading.Thread):
         numViews = self.controller.view.numViewsValue.get()
         fps = self.controller.view.fpsValue.get()
         for i in range(0,numViews):
-            PerformAcquisition(''.join([basename, str(i)]),fps,binning,gain,offset,pixel)
+            angle = float(dTheta*i)
+            filename = '%s%0.4d' % ( basename, i )
+            PerformAcquisition(filename,fps,binning,gain,offset,pixel,angle)
             rotate = int(dTheta*RotateStepPerDeg)
             command = 'F,C,I2M{0},R'.format(rotate)
             COM5.write(command)
@@ -76,6 +78,10 @@ class VarianController():
 class VarianView(Frame):
     def __init__(self,controller):
         self.frame = Toplevel(controller.parent);
+
+        revision = 1.4
+        
+        self.frame.title('Varian {0}'.format(revision))
         self.controller = controller
         
         self.frameRates = [0.2, 0.5, 1., 1.5, 2., 3., 3.75, 5., 6., 7.5, 10.]
@@ -88,6 +94,10 @@ class VarianView(Frame):
         self.gainValue = IntVar()
         self.offsetValue = IntVar()
         self.pixelValue = IntVar()
+
+        self.gainValue.set(1)
+        self.offsetValue.set(1)
+        self.pixelValue.set(1)
         
         self.loadView()
     
@@ -271,7 +281,7 @@ def PerformGainCalibration():
 
   return result
 
-def PerformAcquisition(filename, fps, binning, gain, offset, pixel):
+def PerformAcquisition(filename, fps, binning, gain, offset, pixel, angle):
   if fps not in FrameRates:
     print fps
     return
@@ -371,6 +381,18 @@ def PerformAcquisition(filename, fps, binning, gain, offset, pixel):
     with open(''.join([filename, '.raw']), 'wb') as f:
       for i in xrange(0,size):
         f.write(pack('H',buf[i]))
+
+
+    header = ["CSTv1.00",0,1,x_size,y_size,1,angle,0,60,60+size*2,4,1,0,16,-1.0,-1.0,-1.0,-1.0,0.0,1.0]
+    formats = ['B','B','H','H','H','f','I','I','I','B','B','B','B','f','f','f','f','f','f']
+    
+    with open(''.join([filename, '.cstp']), 'wb') as f:
+      f.write(header[0])
+      for i in range(0,len(formats)):
+        f.write(pack(formats[i],header[i+1]))
+      for i in xrange(0,size):
+        f.write(pack('H',buf[i]))
+      
   else:
     return result
 
