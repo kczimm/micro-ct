@@ -25,12 +25,13 @@ class VelmexController():
         self.model.setRotateValue(float(self.view.rotate_value.get()))
         self.model.setTiltValue(float(self.view.tilt_value.get()))
         self.model.sendPositions()
+        self.model.readPositions()
 
 class VelmexView(Frame):
     def __init__(self,controller):
         self.frame = Toplevel(controller.parent);
 
-        revision = 1.1
+        revision = 1.2
         
         self.frame.title('Velmex {0}'.format(revision))
         self.controller = controller
@@ -49,32 +50,32 @@ class VelmexView(Frame):
         stageLabel = Label(self.frame,text='Stage').grid(row=0,column=0,columnspan=3)
         detectorLabel = Label(self.frame,text='Detector').grid(row=0,column=4,columnspan=3)
         xLabel = Label(self.frame,text='X:').grid(row=1,column=0,sticky=E)
-        xSpinbox = Spinbox(self.frame,textvariable=self.x_value,from_=-50.0,to=50.0,increment=0.1)
+        xSpinbox = Spinbox(self.frame,textvariable=self.x_value,from_=-50.00,to=50.00,increment=0.01)
         xSpinbox.grid(row=1,column=1)
         xSpinbox.bind('<Return>', self.controller.move)
         xUnitLabel = Label(self.frame,text='cm').grid(row=1,column=2)
         yLabel = Label(self.frame,text='Y:').grid(row=2,column=0,sticky=E)
-        ySpinbox = Spinbox(self.frame,textvariable=self.y_value,from_=0.0,to=50.0,increment=0.1)
+        ySpinbox = Spinbox(self.frame,textvariable=self.y_value,from_=0.00,to=50.00,increment=0.01)
         ySpinbox.grid(row=2,column=1)
         ySpinbox.bind('<Return>', self.controller.move)
         yUnitLabel = Label(self.frame,text='cm').grid(row=2,column=2)
         zLabel = Label(self.frame,text='Z:').grid(row=3,column=0,sticky=E)
-        zSpinbox = Spinbox(self.frame,textvariable=self.z_value,from_=0.0,to=50.0,increment=0.1)
+        zSpinbox = Spinbox(self.frame,textvariable=self.z_value,from_=0.00,to=50.00,increment=0.01)
         zSpinbox.grid(row=3,column=1)
         zSpinbox.bind('<Return>', self.controller.move)
         zUnitLabel = Label(self.frame,text='cm').grid(row=3,column=2)
         tiltLabel = Label(self.frame,text='Tilt:').grid(row=4,column=0,sticky=E)
-        tiltSpinbox = Spinbox(self.frame,textvariable=self.tilt_value,from_=0.0,to=90.0,increment=0.1)
+        tiltSpinbox = Spinbox(self.frame,textvariable=self.tilt_value,from_=0.00,to=90.00,increment=0.01)
         tiltSpinbox.grid(row=4,column=1)
         tiltSpinbox.bind('<Return>', self.controller.move)
         tiltUnitLabel = Label(self.frame,text='deg').grid(row=4,column=2)
         rotateLabel = Label(self.frame,text='Rotate:').grid(row=5,column=0,sticky=E)
-        rotateSpinbox = Spinbox(self.frame,textvariable=self.rotate_value,from_=0.0,to=360.0,increment=0.1)
+        rotateSpinbox = Spinbox(self.frame,textvariable=self.rotate_value,from_=0.00,to=360.00,increment=0.01)
         rotateSpinbox.grid(row=5,column=1)
         rotateSpinbox.bind('<Return>', self.controller.move)
         rotateUnitLabel = Label(self.frame,text='deg').grid(row=5,column=2)
         y2Label = Label(self.frame,text='Y2:').grid(row=1,column=4,sticky=E)
-        y2Spinbox = Spinbox(self.frame,textvariable=self.y2_value,from_=0.0,to=50.0,increment=0.1)
+        y2Spinbox = Spinbox(self.frame,textvariable=self.y2_value,from_=0.00,to=50.00,increment=0.01)
         y2Spinbox.grid(row=1,column=5)
         y2Spinbox.bind('<Return>', self.controller.move)
         y2UnitLabel = Label(self.frame,text='cm').grid(row=1,column=6)
@@ -108,38 +109,40 @@ class VelmexModel():
         # Use Serial to set all location values
         logging.debug('Getting positions over COM')
 
+        factor = 100
+        
         drive1_comm = serial.Serial(4)
         drive2_comm = serial.Serial(5)
         try:
             drive1_comm.write('F,X')
             time.sleep(self.WAIT_AFTER_WRITE)
             x_step = drive1_comm.read(drive1_comm.inWaiting())
-            self.x_value.set(int(10*float(x_step)/self.XStepPerIn*self.CmPerIn)/10.)
+            self.x_value.set(int(factor*float(x_step)/self.XStepPerIn*self.CmPerIn)/(1.*factor))
  
             drive1_comm.write('F,Z')
             time.sleep(self.WAIT_AFTER_WRITE)
             y_step = int(drive1_comm.read(drive1_comm.inWaiting()))
-            self.y_value.set(int(10*float(y_step)/self.YStepPerIn*self.CmPerIn)/10.)
+            self.y_value.set(int(factor*float(y_step)/self.YStepPerIn*self.CmPerIn)/(1.*factor))
             
             drive2_comm.write('F,X')
             time.sleep(self.WAIT_AFTER_WRITE)
             z_step = int(drive2_comm.read(drive2_comm.inWaiting()))
-            self.z_value.set(int(10*float(z_step)/self.ZStepPerIn*self.CmPerIn)/10.)
+            self.z_value.set(int(factor*float(z_step)/self.ZStepPerIn*self.CmPerIn)/(1.*factor))
             
             drive1_comm.write('F,T')
             time.sleep(self.WAIT_AFTER_WRITE)
             y2_step = int(drive1_comm.read(drive1_comm.inWaiting()))
-            self.y2_value.set(int(10*float(y2_step)/self.Y2StepPerIn*self.CmPerIn)/10.)
+            self.y2_value.set(int(factor*float(y2_step)/self.Y2StepPerIn*self.CmPerIn)/(1.*factor))
             
             drive1_comm.write('F,Y')
             time.sleep(self.WAIT_AFTER_WRITE)
             tilt_step = int(drive1_comm.read(drive1_comm.inWaiting()))
-            self.tilt_value.set(int(10*float(tilt_step)/self.TiltStepPerDeg)/10.)
+            self.tilt_value.set(int(factor*float(tilt_step)/self.TiltStepPerDeg)/(1.*factor))
             
             drive2_comm.write('F,Y')
             time.sleep(self.WAIT_AFTER_WRITE)
             rotate_step = int(drive2_comm.read(drive2_comm.inWaiting()))
-            self.rotate_value.set(int(10*float(rotate_step)/self.RotateStepPerDeg)/10.)           
+            self.rotate_value.set(int(factor*float(rotate_step)/self.RotateStepPerDeg)/(1.*factor))           
         except:
             pass
 

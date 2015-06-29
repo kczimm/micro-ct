@@ -42,7 +42,7 @@ class ScanThread(threading.Thread):
             command = 'F,C,I2M{0},R'.format(rotate)
             COM5.write(command)
             time.sleep(dTheta/DegPerSec)  # For rotation time
-            time.sleep(2) # For afterglow
+            time.sleep(0.5) # For afterglow
             if not self.controller.scanning:
               break
 
@@ -106,7 +106,7 @@ class VarianView(Frame):
         Spinbox(self.frame,textvariable=self.numViewsValue,from_=0,to=720,increment=1).grid(row=0,column=1)
         Label(self.frame,text='#').grid(row=0,column=2)
         Label(self.frame,text='Angle between Views:').grid(row=1,column=0,sticky=E)
-        Spinbox(self.frame,textvariable=self.deltaThetaValue,from_=0.0,to=90.0,increment=0.1).grid(row=1,column=1)
+        Spinbox(self.frame,textvariable=self.deltaThetaValue,from_=0.0,to=90.0,increment=0.01).grid(row=1,column=1)
         Label(self.frame,text='deg').grid(row=1,column=2)
         Label(self.frame,text='FPS:').grid(row=2,column=0,sticky=E)
         Spinbox(self.frame,values=[str(x) for x in self.frameRates],textvariable=self.fpsValue).grid(row=2,column=1)

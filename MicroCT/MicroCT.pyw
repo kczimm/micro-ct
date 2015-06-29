@@ -60,6 +60,7 @@ def main():
     logging.basicConfig(level=logging.CRITICAL)
     revision = 2.0
     root = Tk()
+    root.iconbitmap(default='logo.ico')
     root.title('MicroCT {0}'.format(revision))
     app = MainController(root)
     root.mainloop()
