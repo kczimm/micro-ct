@@ -253,6 +253,7 @@ class Velmex(object):
     def __enter__(self):
         self.drive1 = serial.Serial(Velmex.DRIVE_COM_1)
         self.drive2 = serial.Serial(Velmex.DRIVE_COM_2)
+        return self
 
     def __exit__(self, *args):
         self.drive1.close()
