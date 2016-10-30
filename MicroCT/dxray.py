@@ -23,13 +23,11 @@ class ScanThread(threading.Thread):
         d_theta = self.controller.view.deltaThetaValue.get()
         number_of_views = self.controller.view.numViewsValue.get()
 
-        output_dir = './'
-        basename = 'dxray_data'
+        basename = self.controller.filename
 
         data_directory = 'C:\Users\Operator1\Desktop\provided-SW\LV2011_exe-SW\data'
         labview_filenames = os.path.join(data_directory,'data_{:>2}.dat')
-        output_template = os.path.join(os.path.abspath(output_dir), \
-                '{}{{}}.txt'.format(basename))
+        output_template = '{}{{}}.txt'.format(basename)
 
         number_of_files = 20
 
@@ -41,9 +39,10 @@ class ScanThread(threading.Thread):
             start_of_waiting = time.time()
             while os.path.getmtime(labview_filename) < start_of_waiting:
                 continue
+            time.sleep(1)
             shutil.copyfile(labview_filename, output_template.format(view_number))
             with velmex.Velmex() as motors:
-                motors.rotate(d_theta)
+                motors.rotate(d_theta, relative=True)
             if not self.controller.scanning:
                 break
 
@@ -62,6 +61,9 @@ class DxRayController():
         logging.debug('Scan button pressed')
 
         if not self.scanning:
+          self.filename = tkFileDialog.asksaveasfilename()
+          if not self.filename:
+            return
           self.scanning = True
           thread = ScanThread(self)
           self.view.toggleButtonText(self.scanning)

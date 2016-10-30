@@ -219,8 +219,8 @@ class VelmexModel():
 
 class Velmex(object):
 
-    DRIVE_COM_1 = 4
-    DRIVE_COM_2 = 5
+    DRIVE_COM_1 = 'COM5'
+    DRIVE_COM_2 = 'COM6'
 
     X_STEPS_PER_IN = 4000
     Y_STEPS_PER_IN = 4000
@@ -271,32 +271,44 @@ class Velmex(object):
             raise ValueError('Drive must be 1 or 2.')
         self.wait()
 
-    def translate_x(self, x_cm):
+    def translate_x(self, x_cm, relative=False):
         x_steps = int(x_cm/Velmex.CM_PER_IN*Velmex.X_STEPS_PER_IN)
         command = Velmex.X_MOVE_TEMPLATE.format(x_steps)
+        if relative:
+            command = command.replace('A','')
         self.send_command(Velmex.X_DRIVE, command)
 
-    def translate_y(self, y_cm):
+    def translate_y(self, y_cm, relative=False):
         y_steps = int(y_cm/Velmex.CM_PER_IN*Velmex.Y_STEPS_PER_IN)
         command = Velmex.Y_MOVE_TEMPLATE.format(y_steps)
+        if relative:
+            command = command.replace('A','')
         self.send_command(Velmex.Y_DRIVE, command)
 
-    def translate_z(self, z_cm):
+    def translate_z(self, z_cm, relative=False):
         z_steps = int(z_cm/Velmex.CM_PER_IN*Velmex.Z_STEPS_PER_IN)
         command = Velmex.Z_MOVE_TEMPLATE.format(z_steps)
+        if relative:
+            command = command.replace('A','')
         self.send_command(Velmex.Z_DRIVE, command)
 
-    def translate_y2(self, y2_cm):
+    def translate_y2(self, y2_cm, relative=False):
         y2_steps = int(y2_cm/Velmex.CM_PER_IN*Velmex.Y2_STEPS_PER_IN)
         command = Velmex.Y2_MOVE_TEMPLATE.format(y2_steps)
+        if relative:
+            command = command.replace('A','')
         self.send_command(Velmex.Y2_DRIVE, command)
 
-    def rotate(self, deg):
+    def rotate(self, deg, relative=False):
         rotate_steps = int(deg*Velmex.ROTATE_STEPS_PER_DEG)
         command = Velmex.ROTATE_TEMPLATE.format(rotate_steps)
+        if relative:
+            command = command.replace('A','')
         self.send_command(Velmex.ROTATE_DRIVE, command)
 
-    def tilt(self, deg):
+    def tilt(self, deg, relative=False):
         tilt_steps = int(deg*Velmex.TILT_STEPS_PER_DEG)
         command = Velmex.TILT_TEMPLATE.format(tilt_steps)
+        if relative:
+            command = command.replace('A','')
         self.send_command(Velmex.TILT_DRIVE, command)
