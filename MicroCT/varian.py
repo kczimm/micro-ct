@@ -378,9 +378,9 @@ def PerformAcquisition(filename, fps, binning, gain, offset, pixel, angle):
 
     result = dll.vip_correct_image(byref(corrImage))
     
-    with open(''.join([filename, '.raw']), 'wb') as f:
-      for i in xrange(0,size):
-        f.write(pack('H',buf[i]))
+##    with open(''.join([filename, '.raw']), 'wb') as f:
+##      for i in xrange(0,size):
+##        f.write(pack('H',buf[i]))
 
 
     header = ["CSTv1.00",0,1,x_size,y_size,1,angle,0,60,60+size*2,4,1,0,16,-1.0,-1.0,-1.0,-1.0,0.0,1.0]

@@ -8,7 +8,7 @@ class VelmexController():
         self.parent = parent
         self.view = VelmexView(self)
         self.model = VelmexModel(self)
-        
+
         self.view.x_value.set(str(self.model.getXValue()))
         self.view.y_value.set(str(self.model.getYValue()))
         self.view.z_value.set(str(self.model.getZValue()))
@@ -32,17 +32,17 @@ class VelmexView(Frame):
         self.frame = Toplevel(controller.parent);
 
         revision = 1.2
-        
+
         self.frame.title('Velmex {0}'.format(revision))
         self.controller = controller
-        
+
         self.x_value = StringVar()
         self.y_value = StringVar()
         self.z_value = StringVar()
         self.y2_value = StringVar()
         self.tilt_value = StringVar()
         self.rotate_value = StringVar()
-        
+
         self.loadView()
 
     def loadView(self):
@@ -81,7 +81,7 @@ class VelmexView(Frame):
         y2UnitLabel = Label(self.frame,text='cm').grid(row=1,column=6)
 
 class VelmexModel():
-    
+
     def __init__(self,controller):
         self.controller = controller
 
@@ -95,14 +95,14 @@ class VelmexModel():
         self.CmPerIn = 2.54
 
         self.WAIT_AFTER_WRITE = 0.08
-    
+
         self.x_value = DoubleVar()
         self.y_value = DoubleVar()
         self.z_value = DoubleVar()
         self.y2_value = DoubleVar()
         self.tilt_value = DoubleVar()
         self.rotate_value = DoubleVar()
-    
+
         self.readPositions()
 
     def readPositions(self):
@@ -110,7 +110,7 @@ class VelmexModel():
         logging.debug('Getting positions over COM')
 
         factor = 100
-        
+
         drive1_comm = serial.Serial(4)
         drive2_comm = serial.Serial(5)
         try:
@@ -118,38 +118,38 @@ class VelmexModel():
             time.sleep(self.WAIT_AFTER_WRITE)
             x_step = drive1_comm.read(drive1_comm.inWaiting())
             self.x_value.set(int(factor*float(x_step)/self.XStepPerIn*self.CmPerIn)/(1.*factor))
- 
+
             drive1_comm.write('F,Z')
             time.sleep(self.WAIT_AFTER_WRITE)
             y_step = int(drive1_comm.read(drive1_comm.inWaiting()))
             self.y_value.set(int(factor*float(y_step)/self.YStepPerIn*self.CmPerIn)/(1.*factor))
-            
+
             drive2_comm.write('F,X')
             time.sleep(self.WAIT_AFTER_WRITE)
             z_step = int(drive2_comm.read(drive2_comm.inWaiting()))
             self.z_value.set(int(factor*float(z_step)/self.ZStepPerIn*self.CmPerIn)/(1.*factor))
-            
+
             drive1_comm.write('F,T')
             time.sleep(self.WAIT_AFTER_WRITE)
             y2_step = int(drive1_comm.read(drive1_comm.inWaiting()))
             self.y2_value.set(int(factor*float(y2_step)/self.Y2StepPerIn*self.CmPerIn)/(1.*factor))
-            
+
             drive1_comm.write('F,Y')
             time.sleep(self.WAIT_AFTER_WRITE)
             tilt_step = int(drive1_comm.read(drive1_comm.inWaiting()))
             self.tilt_value.set(int(factor*float(tilt_step)/self.TiltStepPerDeg)/(1.*factor))
-            
+
             drive2_comm.write('F,Y')
             time.sleep(self.WAIT_AFTER_WRITE)
             rotate_step = int(drive2_comm.read(drive2_comm.inWaiting()))
-            self.rotate_value.set(int(factor*float(rotate_step)/self.RotateStepPerDeg)/(1.*factor))           
+            self.rotate_value.set(int(factor*float(rotate_step)/self.RotateStepPerDeg)/(1.*factor))
         except:
             pass
 
 
         drive1_comm.close()
         drive2_comm.close()
-    
+
     def sendPositions(self):
         # Use Serial to send all location values
         logging.debug('Sending positions over COM')
@@ -169,7 +169,7 @@ class VelmexModel():
 
             drive1_comm.write(drive1_cmd)
             drive2_comm.write(drive2_cmd)
-            
+
         except:
             pass
 
@@ -199,18 +199,116 @@ class VelmexModel():
 
     def setXValue(self,x_value):
         self.x_value.set(x_value)
-    
+
     def setYValue(self,y_value):
         self.y_value.set(y_value)
-    
+
     def setZValue(self,z_value):
         self.z_value.set(z_value)
-    
+
     def setTiltValue(self,tilt_value):
         self.tilt_value.set(tilt_value)
-    
+
     def setRotateValue(self,rotate_value):
         self.rotate_value.set(rotate_value)
-    
+
     def setY2Value(self,y2_value):
         self.y2_value.set(y2_value)
+
+
+
+class Velmex(object):
+
+    DRIVE_COM_1 = 'COM5'
+    DRIVE_COM_2 = 'COM6'
+
+    X_STEPS_PER_IN = 4000
+    Y_STEPS_PER_IN = 4000
+    Z_STEPS_PER_IN = 4000
+    TILT_STEPS_PER_DEG = 80
+    ROTATE_STEPS_PER_DEG = 80
+    Y2_STEPS_PER_IN = 4000
+
+    CM_PER_IN = 2.54
+
+    WAIT_AFTER_WRITE = 0.08
+
+    X_MOVE_TEMPLATE = 'F,C,IA1M{},R'
+    Y_MOVE_TEMPLATE = 'F,C,IA3M{},R'
+    Z_MOVE_TEMPLATE = 'F,C,IA1M{},R'
+    Y2_MOVE_TEMPLATE = 'F,C,IA4M{},R'
+    ROTATE_TEMPLATE = 'F,C,IA2M{},R'
+    TILT_TEMPLATE = 'F,C,IA2M{},R'
+
+    X_DRIVE = 1
+    Y_DRIVE = 1
+    Z_DRIVE = 2
+    Y2_DRIVE = 1
+    ROTATE_DRIVE = 2
+    TILT_DRIVE = 1
+
+    def __init__(self):
+        pass
+
+    def __enter__(self):
+        self.drive1 = serial.Serial(Velmex.DRIVE_COM_1)
+        self.drive2 = serial.Serial(Velmex.DRIVE_COM_2)
+        return self
+
+    def __exit__(self, *args):
+        self.drive1.close()
+        self.drive2.close()
+
+    def wait(self):
+        time.sleep(Velmex.WAIT_AFTER_WRITE)
+
+    def send_command(self, drive, command):
+        if drive == 1:
+            self.drive1.write(command)
+        elif drive == 2:
+            self.drive2.write(command)
+        else:
+            raise ValueError('Drive must be 1 or 2.')
+        self.wait()
+
+    def translate_x(self, x_cm, relative=False):
+        x_steps = int(x_cm/Velmex.CM_PER_IN*Velmex.X_STEPS_PER_IN)
+        command = Velmex.X_MOVE_TEMPLATE.format(x_steps)
+        if relative:
+            command = command.replace('A','')
+        self.send_command(Velmex.X_DRIVE, command)
+
+    def translate_y(self, y_cm, relative=False):
+        y_steps = int(y_cm/Velmex.CM_PER_IN*Velmex.Y_STEPS_PER_IN)
+        command = Velmex.Y_MOVE_TEMPLATE.format(y_steps)
+        if relative:
+            command = command.replace('A','')
+        self.send_command(Velmex.Y_DRIVE, command)
+
+    def translate_z(self, z_cm, relative=False):
+        z_steps = int(z_cm/Velmex.CM_PER_IN*Velmex.Z_STEPS_PER_IN)
+        command = Velmex.Z_MOVE_TEMPLATE.format(z_steps)
+        if relative:
+            command = command.replace('A','')
+        self.send_command(Velmex.Z_DRIVE, command)
+
+    def translate_y2(self, y2_cm, relative=False):
+        y2_steps = int(y2_cm/Velmex.CM_PER_IN*Velmex.Y2_STEPS_PER_IN)
+        command = Velmex.Y2_MOVE_TEMPLATE.format(y2_steps)
+        if relative:
+            command = command.replace('A','')
+        self.send_command(Velmex.Y2_DRIVE, command)
+
+    def rotate(self, deg, relative=False):
+        rotate_steps = int(deg*Velmex.ROTATE_STEPS_PER_DEG)
+        command = Velmex.ROTATE_TEMPLATE.format(rotate_steps)
+        if relative:
+            command = command.replace('A','')
+        self.send_command(Velmex.ROTATE_DRIVE, command)
+
+    def tilt(self, deg, relative=False):
+        tilt_steps = int(deg*Velmex.TILT_STEPS_PER_DEG)
+        command = Velmex.TILT_TEMPLATE.format(tilt_steps)
+        if relative:
+            command = command.replace('A','')
+        self.send_command(Velmex.TILT_DRIVE, command)

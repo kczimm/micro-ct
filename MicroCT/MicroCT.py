@@ -5,12 +5,17 @@ import logging
 import varian
 import nexus
 import velmex
+import dxray
 #import mfx
 
 class MainController():
     def __init__(self,parent):
         self.parent = parent
         self.view = MainView(self)
+
+    def dxrayButtonPressed(self):
+        logging.debug('DxRay button pressed')
+        dxrayApp = dxray.DxRayController(self.parent)
 
     def nexusButtonPressed(self):
         logging.debug('Nexus button pressed')
@@ -42,11 +47,12 @@ class MainView(Frame):
 
         tkMessageBox.showwarning("REMINDER", "Warm up source before continuing.")
     def loadView(self):
-        
+
         ## Detector section
         detectorLabel = Label(self.frame,text='Detectors').grid(row=0,column=0,pady=self.pady,padx=self.padx)
         varianButton = Button(self.frame,text='Varian Panel',command=self.controller.varianButtonPressed).grid(row=1,column=0,pady=self.pady,padx=self.padx)
         nexusButton = Button(self.frame,text='Nexus PCXD',command=self.controller.nexusButtonPressed).grid(row=2,column=0,pady=self.pady,padx=self.padx)
+        dxrayButton = Button(self.frame,text='DxRay PCXD',command=self.controller.dxrayButtonPressed).grid(row=3,column=0,pady=self.pady,padx=self.padx)
 
         ## Stage section
         stageLabel = Label(self.frame,text='Stage').grid(row=0,column=1,pady=self.pady,padx=self.padx)
