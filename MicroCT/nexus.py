@@ -45,7 +45,61 @@ class ScanThread(threading.Thread):
 
         if self.controller.scanning:
             self.controller.scanning = False
-            self.controller.view.toggleButtonText(self.controller.scanning)
+            self.controller.view.toggleCTButtonText(self.controller.scanning)
+        data_acq.close()
+        drive2_comm.close()
+
+class ScanStepWedgeThread(threading.Thread):
+    def __init__(self, controller):
+        threading.Thread.__init__(self)
+        self.controller = controller
+
+    def run(self):
+        logging.debug('Scan button pressed')
+
+
+        # Establish COM connection
+        data_acq = serial.Serial('COM9')
+        drive2_comm = serial.Serial(5)
+
+        # Bislide model E01
+        InchPerSec = 0.25
+        ZStepPerIn = 4000
+        WAIT_AFTER_WRITE = 0.08
+        num_steps = self.controller.view.numSteps.get()
+        dZ = 0.6
+
+        while data_acq.read(data_acq.inWaiting()) != 'G': pass
+        # Already in position
+        data_acq.write('R')
+
+        for i in range(1,num_steps):
+            # Wait for complete token (G) (0x47)
+            while data_acq.read(data_acq.inWaiting()) != 'G': pass
+            if not self.controller.scanning:
+                # Send stop to other computer
+                data_acq.write('Q') # prematurely terminate the scanning.
+                break
+            # translate
+            translate = ZStepPerIn*dZ
+            drive2_cmd = 'F,C,I1M{0},R'.format(translate)
+            drive2_comm.write(drive2_cmd)
+            # Wait for rotate complete, time depends on d_theta
+            time.sleep(dZ/InchPerSec)
+            # Send acquisition token (R) (0x52)
+            data_acq.write('R')
+            # REPEAT
+
+        # Translate back
+        #translate = int(ZStepPerIn*dZ*i)
+        #drive2_cmd = 'F,C,I1M{0},R'.format(-translate)
+        #drive2_comm.write(drive2_cmd)
+        # Wait for translation complete, time depends on distance
+        #time.sleep(dZ/InchPerSec*num_steps)
+        
+        if self.controller.scanning:
+            self.controller.scanning = False
+            self.controller.view.toggleStepWedgeButtonText(self.controller.scanning)
         data_acq.close()
         drive2_comm.close()
 
@@ -56,25 +110,37 @@ class NexusController():
         self.view = NexusView(self)
         self.scanning = False
     
-    def scanButtonPressed(self):
+    def scanCTButtonPressed(self):
         logging.debug('Scan button pressed')
         
         if not self.scanning:
           self.scanning = True
           thread = ScanThread(self)
-          self.view.toggleButtonText(self.scanning)
+          self.view.toggleCTButtonText(self.scanning)
           self.view.frame.focus_set()
           thread.start()
         else:
           self.scanning = False
-          self.view.toggleButtonText(self.scanning)
+          self.view.togglCTButtonText(self.scanning)
+    def scanStepWedgeButtonPressed(self):
+        logging.debug('Scan Step Wedge button pressed.')
+
+        if not self.scanning:
+          self.scanning = True
+          thread = ScanStepWedgeThread(self)
+          self.view.toggleStepWedgeButtonText(self.scanning)
+          self.view.frame.focus_set()
+          thread.start()
+        else:
+          self.scanning = False
+          self.view.toggleStepWedgeButtonText(self.scanning)
 
 
 class NexusView(Frame):
     def __init__(self,controller):
-        self.frame = Toplevel(controller.parent);
+        self.frame = Toplevel(controller.parent)
 
-        revision = 1.0
+        revision = 2.0
         
         self.frame.title('Nexus {0}'.format(revision))
         self.controller = controller
@@ -84,6 +150,7 @@ class NexusView(Frame):
         self.numViewsValue = IntVar()
         self.deltaThetaValue = DoubleVar()
         self.timePerViewValue = DoubleVar()
+        self.numSteps = IntVar()
         
         self.loadView()
     
@@ -98,13 +165,29 @@ class NexusView(Frame):
         Label(self.frame,text='Time Per View:').grid(row=2,column=0,sticky=E)
         Spinbox(self.frame,textvariable=self.timePerViewValue,from_=0.001,to=60.000,increment=0.1).grid(row=2,column=1)
         Label(self.frame,text='s/view').grid(row=2,column=2)
-        self.scanButton = Button(self.frame,text='Scan',command=self.controller.scanButtonPressed,bg='green')
-        self.scanButton.grid(row=4,column=0,columnspan=3,sticky=E+W)
+        self.scanCTButton = Button(self.frame,text='Scan',command=self.controller.scanCTButtonPressed,bg='green')
+        self.scanCTButton.grid(row=4,column=0,columnspan=3,sticky=E+W)
+        Label(self.frame,text='No. of Steps:').grid(row=5,column=0,stick=E)
+        Spinbox(self.frame,textvariable=self.numSteps,from_=1,to=25,increment=1).grid(row=5,column=1)
+        Label(self.frame,text='#').grid(row=5,column=2)
+        self.scanStepWedgeButton = Button(self.frame,text='Scan Step Wedge Phantom',command=self.controller.scanStepWedgeButtonPressed,bg='yellow')
+        self.scanStepWedgeButton.grid(row=6,column=0,columnspan=3,sticky=E+W)
 
-    def toggleButtonText(self,scanning):
+    def toggleCTButtonText(self,scanning):
         if scanning:
-            self.scanButton['text'] = 'Stop Scanning'
-            self.scanButton['bg'] = 'red'
+            self.scanCTButton['text'] = 'Stop Scanning'
+            self.scanCTButton['bg'] = 'red'
+            self.scanStepWedgeButton['state'] = 'disabled'
         else:
-            self.scanButton['text'] = 'Scan'
-            self.scanButton['bg'] = 'green'
+            self.scanCTButton['text'] = 'Scan'
+            self.scanCTButton['bg'] = 'green'
+            self.scanStepWedgeButton['state'] = 'normal'
+    def toggleStepWedgeButtonText(self,scanning):
+        if scanning:
+            self.scanStepWedgeButton['text'] = 'Stop Scanning'
+            self.scanStepWedgeButton['bg'] = 'red'
+            self.scanCTButton['state'] = 'disabled'
+        else:
+            self.scanStepWedgeButton['text'] = 'Scan Step Wedge Phantom'
+            self.scanStepWedgeButton['bg'] = 'yellow'
+            self.scanCTButton['state'] = 'normal'
